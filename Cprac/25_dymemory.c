@@ -85,14 +85,22 @@ int main(void)
     int num = 5;
     int* inputNum = (int*)malloc(sizeof(int)*num);
     int input;
-    int i = 0;
-    while(1)
+    int i = 0, y;
+    while(1) // 오우 오우 책도 이런식으로 했네
     {
         printf("정수를 입력하세요 : ");
         scanf("%d", &input);
-        if(i+1 > sizeof(inputNum)/sizeof(int))
+        if(i+1 == num){
+            inputNum = (int*)realloc(inputNum, sizeof(int)*( num+=3 )); // 주의할것 realloc은 기존 + 증가량을 해줘야함  기존꺼 없이 증가량만 하면 안됨...
+        }
         inputNum[i] = input;
-        
+        if(input == -1){
+            for(y = 0; y<i; y++)
+                printf(" %d", inputNum[y]);
+            free(inputNum);
+            break;
+        }
+        i++;
     }
 
     return 0;
