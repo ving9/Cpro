@@ -1,0 +1,81 @@
+int ItemYorN(void) // 아이템 사용할껀지 판단하는 함수
+{
+    int cho;
+    while(1){
+        printf("진짜 사용 하시겠습니까? (y or n) : ");
+        ClearBuffer();
+        cho = getchar();
+        printf("\n");
+        if(cho == 'y')
+            return cho;
+        else if(cho == 'n')
+            return cho;
+        else{
+            printf("잘못된 입력!\n");
+            continue;
+        }            
+    }
+}
+void ItemUse(void) // 아이템 사용시 발동되는 함수
+{
+    int cho;
+    int idx;
+    int i = 1;
+    while(i == 1){
+        PrintItem();
+        fputs("몇번 아이템을 고르시겠습니까? (돌아가기 = x): ",stdout);
+        ClearBuffer();
+        cho = getchar();
+        printf("\n");
+        switch(cho){
+            case '1': idx = 0; break;
+            case '2': idx = 1; break;
+            case '3': idx = 2; break;
+            case '4': idx = 3; break;
+            case '5': idx = 4; break;
+            case 'x': i = 0; idx = 6; break;
+            default:  idx = 5;  break; 
+        }
+        if(idx >= CountItem(user_item)){
+            if (idx == 6)
+                ClearBuffer();
+                continue;
+            printf("잘못된 입력\n");
+            sleep(1);
+            continue;
+        }
+        else if(user_item[idx].iNum == 0)
+        {
+            cho = ItemYorN();
+            if(cho == 'y'){
+                ItemIce();
+                ItemRemove(idx);
+                break;
+            }
+            else if(cho == 'n')
+                continue;
+        }
+        else if(user_item[idx].iNum == 1)
+        {
+            cho = ItemYorN();
+            if(cho == 'y'){
+                ItemHpUp();
+                ItemRemove(idx);
+                break;
+            }
+            else if(cho == 'n')
+                continue;
+        }
+        else if(user_item[idx].iNum == 2)
+        {
+            cho = ItemYorN();
+            if(cho == 'y'){
+                ItemMpUp();
+                ItemRemove(idx);
+                break;
+            }
+            else if(cho == 'n')
+                continue;
+        }
+    }
+}

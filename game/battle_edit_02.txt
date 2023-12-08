@@ -1,0 +1,58 @@
+// 변경점 01
+Item mash[4] = {{"얼음",0,0,"상대방의 턴을 한턴 넘긴다",},{"주먹밥",1,100,"체력 50%% 회복",},{"커피",2,50,"마나 50%% 회복",},{"0",-1}}; 
+
+
+// 변경점 02
+ItemHpUp, ItemMpUp, BossItemHpUp, BossItemMpUp 4개의 함수에 각각
+
+user_mon[selNum.selUser].hp += (user_mon[selNum.selUser].max_hp / 2);
+user_mon[selNum.selUser].mp += (user_mon[selNum.selUser].max_mp / 2);
+
+체력 / 마나 채우는 코드를 이것으로 변경
+
+
+// 변경점 03
+Attack02 함수에 마나 소모량 부분을
+
+(userS.level*30) 이걸로 변경
+
+
+// 변경점 04
+BattleCore 함수에서 2번 선택시 마나 모자라다고 출력하는부분
+(userS.level*30) 이걸로 변경
+
+// 변경점 05
+BossUserAttack 부분에서
+sel[0] == 2 조건문을
+
+if(user_mon[selNum.selUser].mp < (userS.level*30))
+                    {
+                        printf("마나가 없습니다...\n");
+                        sleep(1);
+                    }
+                    else
+                    {
+                        (character,selNum.selUser, 0, user_mon, boss);
+                        break;
+                    }
+
+이것으로 수정
+
+
+
+// 변경점 06
+BossAttack 함수에서
+
+if(boss[0].mp >= (userS.level*30))
+            {
+                event = rand() % 100 + 1;
+                if(event <= 80)
+                    Attack01(character,0,selNum.selUser,boss,user_mon);
+                else
+                    Attack02(character,0,selNum.selUser,boss,user_mon);
+            }
+            else
+                Attack01(character,0,selNum.selUser,boss,user_mon);
+                
+                
+이 조건문 추가

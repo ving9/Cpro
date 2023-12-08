@@ -1,0 +1,152 @@
+void PrintItem(void) // 아이템 리스트 출력
+{
+    system("clear");
+    printf("\n\n");
+    int i;
+    for(i=0; i<CountItem(user_item); i++){
+        printf("%d번 %s : %s \n", i+1, user_item[i].name, user_item[i].script);
+    }
+}
+
+void ItemIce(void) // 아이템 1번 턴넘기기
+{
+    printf("%s 아이템 사용!! %s\n\n", mash[0].name, mash[0].script);
+    mash[0].count = 1;
+    sleep(2);
+}
+
+void ItemHpUp(void) // 아이템 2번 회복포션
+{
+    printf("%s 아이템 사용!! %s \n\n", mash[1].name, mash[1].script);
+    user_mon[selNum.selUser].hp += mash[1].fig;
+    if (user_mon[selNum.selUser].hp > user_mon[selNum.selUser].max_hp)
+        user_mon[selNum.selUser].hp = user_mon[selNum.selUser].max_hp;
+    sleep(2);
+    if (mash[0].count == 1){
+            mash[0].count = 0;
+            PrintBattle(devmon[selNum.selNpc].iNum);
+            printf("\n\n %s 얼음효과!! 공격 불가능 \n", devmon[selNum.selNpc].name);
+            sleep(1);
+    }
+    else{
+        NpcAttack();
+    }
+}
+
+void ItemMpUp(void) // 아이템 3번 마나회복포션
+{
+    printf("%s 아이템 사용!! %s \n\n", mash[2].name, mash[2].script);
+    user_mon[selNum.selUser].mp += mash[2].fig;
+    if (user_mon[selNum.selUser].mp > user_mon[selNum.selUser].max_mp)
+        user_mon[selNum.selUser].mp = user_mon[selNum.selUser].max_mp;
+    sleep(2);
+    if (mash[0].count == 1){
+            mash[0].count = 0;
+            PrintBattle(devmon[selNum.selNpc].iNum);
+            printf("\n\n %s 얼음효과!! 공격 불가능 \n", devmon[selNum.selNpc].name);
+            sleep(1);
+    }
+    else{
+        NpcAttack();
+    }
+}
+
+void ItemRemove(int idx) // 유저 리스트에서 사용한 아이템 제거
+{
+    for (int i = idx;i < CountItem(user_item) - 1;i++)
+    {
+        user_item[i] = user_item[i + 1];
+        // mon1[i].iNum--;
+    }
+    user_item[CountItem(user_item) - 1] = init_item;
+}
+void ItemUse(void) // 아이템 사용시 발동되는 함수
+{
+    int cho;
+    int i;
+    while(1){
+        PrintItem();
+        fputs("몇번 아이템을 고르시겠습니까? : ",stdout);
+        scanf("%d", &cho);
+        cho -= 1;
+        if(cho < 0 || cho > CountItem(user_item)){
+            puts("잘못된 입력!! 정확히 고르세요");
+            sleep(1);
+            continue;
+        }
+        else if(user_item[cho].iNum == 0)
+        {
+            ItemIce();
+            ItemRemove(cho);
+            break;
+        }
+        else if(user_item[cho].iNum == 1)
+        {
+            ItemHpUp();
+            ItemRemove(cho);
+            break;
+        }
+        else if(user_item[cho].iNum == 2)
+        {
+            ItemMpUp();
+            ItemRemove(cho);
+            break;
+        }
+    }
+}
+
+
+
+// 변경된 함수 ----------------------------------------------------------------
+// battlecore() 함수안에 행동 입력 받고 나서 else if 문 하나 추가
+else if(selAct == 3 && CountItem(user_item) == 0){ // 아이템 갯수 확인 기능 추가
+	printf("아이템이 없습니다 정신차리세요.\n");
+	sleep(1);
+	continue;
+}
+
+
+
+
+
+
+
+
+void BattleActSel(int num)   // 얼음효과 아이템 발동 추가
+{
+    if(num == 1)
+    {
+        Attack01(selNum.selUser, selNum.selNpc, user_mon, devmon);
+        if (mash[0].count == 1){
+            mash[0].count = 0;
+            PrintBattle(devmon[selNum.selNpc].iNum);
+            printf("\n\n %s 얼음효과!! 공격 불가능 \n", devmon[selNum.selNpc].name);
+            sleep(1);
+        }
+        else{
+            NpcAttack();
+        }
+        
+    }
+    else if (num == 2)
+    {
+        Attack02(selNum.selUser, selNum.selNpc, user_mon, devmon);
+        if (mash[0].count == 1){
+            mash[0].count = 0;
+            PrintBattle(devmon[selNum.selNpc].iNum);
+            printf("\n\n %s 얼음효과!! 공격 불가능 \n", devmon[selNum.selNpc].name);
+            sleep(1);
+        }
+        else{
+            NpcAttack();
+        }
+    }
+    else if (num == 3) // 아이템 사용 기능 추가
+    {
+        ItemUse();
+    }
+}
+            
+  
+
+

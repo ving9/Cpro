@@ -1,0 +1,113 @@
+void BattleVictory(ImgList character)
+{
+    int choice, i;
+    while(1)
+    {
+        PrintVic(character,devmon[selNum.selNpc].iNum);
+        printf("내 개발몬으로 영입할까? 1)예 2)아니오 :");
+        scanf("%d", &choice);
+        if (choice == 1)
+        {
+            int quit = 1;
+            while (quit == 1)
+            {
+                if (CountMon(user_mon) == 3)
+                {
+                    int selMon, idx;
+                    PrintVic(character,devmon[selNum.selNpc].iNum);
+                    for (i = 0; i < CountMon(user_mon); i++)
+                    {
+                        printf("   %d) %s HP:%d/%d MP:%d/%d DMG:%d SDMG:%d \n", i + 1, user_mon[i].name, user_mon[i].hp, user_mon[i].max_hp, user_mon[i].mp, user_mon[i].max_mp, user_mon[i].power, user_mon[i].sk_power);
+                    }
+                    printf("\n\n 몇 번 몬스터를 교체할까? (취소 : x): ");
+                    ClearBuffer();
+                    selMon = getchar();
+                    switch(selMon){
+                        case '1': idx = 0; break;
+                        case '2': idx = 1; break;
+                        case '3': idx = 2; break;
+                        case 'x': idx = 5; quit = 0; break;
+                        default: printf("잘못된 입력!!"); idx = 5; break; 
+                    }
+                    if (idx == 0)
+                    {
+                        printf("\n\n시작 개발몬은 변경 불가능합니다. \n");
+                        sleep(1);
+                    }
+                    else if(idx > 3)
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        AddTeam(user_mon, devmon, idx);
+                        AddTeam(devmon, user_mon, selNum.selNpc);
+                        user_mon[CountMon(user_mon) - 1].hp = user_mon[CountMon(user_mon) - 1].max_hp;
+                        user_mon[CountMon(user_mon) - 1].mp = user_mon[CountMon(user_mon) - 1].max_mp;
+
+                        devmon[CountMon(devmon) - 1].hp = devmon[CountMon(devmon) - 1].max_hp;
+                        devmon[CountMon(devmon) - 1].mp = devmon[CountMon(devmon) - 1].max_mp;
+
+                        printf("\n동료 교체 성공! 버려진 개발몬은 애타게 나를 바라봅니다....\n");
+                        sleep(1);
+
+                        system("clear");
+                        FILE * recruit = NULL;
+                        memset(character.imgarr, 0, sizeof(character.imgarr));
+                        recruit = fopen("txt/recruit.txt", "r");
+                        fread(character.imgarr, 1, 9999, recruit);
+                        printf("%s\n", character.imgarr);
+                        fclose(recruit);
+
+                        printf("\n동료 영입 성공! \n");
+
+                        printf("\n변경된 내 개발몬 목록 \n");
+                        for (i = 0; i < CountMon(user_mon); i++)
+                        {
+                            printf("   %d) %s HP:%d/%d MP:%d/%d DMG:%d SDMG:%d \n", i + 1, user_mon[i].name, user_mon[i].hp, user_mon[i].max_hp, user_mon[i].mp, user_mon[i].max_mp, user_mon[i].power, user_mon[i].sk_power);
+                        }
+                        sleep(1);
+                        return;
+                        break;
+                    }
+                }
+                else
+                {
+                    AddTeam(devmon, user_mon, selNum.selNpc);
+                    user_mon[CountMon(user_mon) - 1].hp = user_mon[CountMon(user_mon) - 1].max_hp;
+                    user_mon[CountMon(user_mon) - 1].mp = user_mon[CountMon(user_mon) - 1].max_mp;
+
+
+                    system("clear");
+                    FILE * recruit = NULL;
+                    memset(character.imgarr, 0, sizeof(character.imgarr));
+                    recruit = fopen("txt/recruit.txt", "r");
+                    fread(character.imgarr, 1, 9999, recruit);
+                    printf("%s\n", character.imgarr);
+                    fclose(recruit);
+
+                    printf("\n동료 영입 성공! \n");
+                    printf("\n변경된 내 개발몬 목록 \n");
+                    for (i = 0; i < CountMon(user_mon); i++)
+                    {
+                        printf("\n   %d) %s HP:%d/%d MP:%d/%d DMG:%d SDMG:%d \n", i + 1, user_mon[i].name, user_mon[i].hp, user_mon[i].max_hp, user_mon[i].mp, user_mon[i].max_mp, user_mon[i].power, user_mon[i].sk_power);
+                    }
+                    sleep(1);
+                    return;
+                    break;
+                }
+            }
+        }
+        else if(choice==2)
+        {
+            devmon[selNum.selNpc].hp = devmon[selNum.selNpc].max_hp;
+            devmon[selNum.selNpc].mp = devmon[selNum.selNpc].max_mp;
+            break;
+        }
+        else
+        {
+            printf("잘못된 입력입니다. \n");
+            sleep(1); system("clear"); 
+        }
+    }
+}

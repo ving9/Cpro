@@ -1,0 +1,33 @@
+void BattleCore(ImgList character)
+- 전투 진행하는 함수
+- 전투의 승패여부 판단 / 유저의 입력에 따른 전투 행동 기능
+
+void BattleActSel(ImgList character, char num)
+- BattleCore 함수에서 받아온 유저의 입력값에 따라 작동하는 함수
+- 조건문으로 일반공격, 특수공격, 아이템사용 구분 
+
+ void Attack01(ImgList character, int atNum, int dfNum, DevMon* atmon, DevMon* dfmon)
+ void Attack02(ImgList character, int atNum, int dfNum, DevMon* atmon, DevMon* dfmon)
+ - 일반 공격과 특수공격을 진행하는 함수
+ - 일반 공격에서는 확률에 따라 치명타 발동하는 기능
+ 
+ int ItemUse(void)
+ - 아이템 사용시 작동하는 함수
+ - 유저의 입력에 따라 각 아이템에 따른 함수 작동시키는 기능
+ 
+ void PrintBattle(ImgList character, int iNum)
+ - 전투시 캐릭터의 이미지와 스탯을 프린트해주는 함수
+ 
+ void BattleVictory(ImgList character)
+ - 전투 승리시 개발몬 영입을 진행하는 함수
+ - 조건에 따라 내 몬스터를 상대 몬스터와 교환가능
+ 
+ 
+ void BossBattleCore(int* quit)
+ - 보스와 전투시 작동하는 함수
+ - 랜덤 난수에 따라 유저와 보스의 선공 여부 결정
+ 
+ void BossAttack(void)
+ - 보스 공격시 작동하는 함수
+ - 유저 몬스터의 체력을 파악하여 랜덤으로 공격
+ - 체력에 따라 체력을 회복하는 기능

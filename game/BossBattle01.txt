@@ -1,0 +1,335 @@
+수정된 코드 -----------------------------------------------------------------------------------------------
+
+
+DevMon boss[1] = {"개발원장",99,"런타임 에러","취업 실패 기우제",50000,50000,1000,1000,0,3000};  // 보스 정보 추가
+
+
+// attack01, 02번 함수 //프린트 하는 부분마다 조건문 추가
+if (userS.pre_pos == 'p' && atmon == boss)
+        PrintBoss(character);
+else if (userS.pre_pos == 'p')
+	PrintBossUser(character, atmon[atNum].iNum);
+else
+	PrintBattle(character,atmon[atNum].iNum);
+	
+
+
+
+int ItemYorN(void) // 아이템 사용할껀지 판단하는 함수 // fgets 로 변경
+{
+    char cho[2];
+    while(1){
+        printf("진짜 사용 하시겠습니까? (y or n) : ");
+        fgets(cho, 2, stdin);
+        ClearBuffer();
+        printf("\n");
+        if(cho[0] == 'y')
+            return cho[0];
+        else if(cho[0] == 'n')
+            return cho[0];
+        else{
+            printf("잘못된 입력!\n");
+            continue;
+        }            
+    }
+}
+
+int ItemUse(void) // 아이템 사용시 발동되는 함수 // 보스전을 위해 변경
+{
+    char cho[2];
+    int idx;
+    int i = 1;
+    while(i == 1){
+        PrintItem();
+        fputs("몇번 아이템을 고르시겠습니까? (돌아가기 = x): ",stdout);
+        fgets(cho,sizeof(cho),stdin);
+        ClearBuffer();
+        // printf("\n");
+        switch(cho[0]){
+            case '1': idx = 0; break;
+            case '2': idx = 1; break;
+            case '3': idx = 2; break;
+            case '4': idx = 3; break;
+            case '5': idx = 4; break;
+            case 'x': i = 0; idx = 6; break;
+            default:  idx = 5;  break; 
+        }
+        if(idx >= CountItem(user_item)){
+            if (idx == 6)
+                return 1; // 리턴으로 끝냄
+            printf("잘못된 입력\n");
+            sleep(1);
+            continue;
+        }
+        else if(user_item[idx].iNum == 0)
+        {
+            cho[0] = ItemYorN();
+            if(cho[0] == 'y'){
+                ItemIce();
+                ItemRemove(idx);
+                return 0;
+            }
+            else if(cho[0] == 'n')
+                continue;
+        }
+        else if(user_item[idx].iNum == 1)
+        {
+            cho[0] = ItemYorN();
+            if(cho[0] == 'y'){
+                if(userS.pre_pos == 'p')   // 보스전 전용 
+                    BossItemHpUp();
+                else
+                    ItemHpUp();
+                ItemRemove(idx);
+                return 0;
+            }
+            else if(cho[0] == 'n')
+                continue;
+        }
+        else if(user_item[idx].iNum == 2)
+        {
+            cho[0] = ItemYorN();
+            if(cho[0] == 'y'){
+                if(userS.pre_pos == 'p')  // 보스전 전용
+                    BossItemMpUp();
+                else
+                    ItemMpUp();
+                ItemRemove(idx);
+                return 0;
+            }
+            else if(cho[0] == 'n')
+                continue;
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+새로만든 함수 ---------------------------------------------------------------------------
+
+
+void BossItemHpUp(void) // 보스전 아이템 2번
+{
+    printf("%s 아이템 사용!! %s \n\n", mash[1].name, mash[1].script);
+    user_mon[selNum.selUser].hp += mash[1].fig;
+    if (user_mon[selNum.selUser].hp > user_mon[selNum.selUser].max_hp)
+        user_mon[selNum.selUser].hp = user_mon[selNum.selUser].max_hp;
+    sleep(2);
+}
+
+void BossItemMpUp(void) // 보스전 아이템 3번
+{
+    printf("%s 아이템 사용!! %s \n\n", mash[2].name, mash[2].script);
+    user_mon[selNum.selUser].mp += mash[2].fig;
+    if (user_mon[selNum.selUser].mp > user_mon[selNum.selUser].max_mp)
+        user_mon[selNum.selUser].mp = user_mon[selNum.selUser].max_mp;
+    sleep(2);
+}
+
+void PrintBoss(ImgList character) // 보스배틀시 보스 출력
+{
+    system("clear");
+    FILE* bossImg = NULL;
+    bossImg = fopen("txt/boss.txt", "r");
+    fread(character.imgarr, 1, 9999, bossImg);
+    printf("%s\n", character.imgarr);
+    fclose(bossImg);
+    printf("---------------------------------------------------------------------------------------------\n");
+    printf("(%s)%s HP:%d/%d  MP:%d/%d  DMG:%d    ", userS.name, user_mon[selNum.selUser].name, user_mon[selNum.selUser].hp, user_mon[selNum.selUser].max_hp, user_mon[selNum.selUser].mp, user_mon[selNum.selUser].max_mp, user_mon[selNum.selUser].power);
+    printf("(Boss)%s HP:%d/%d  MP:%d/%d  DMG:???\n", boss[0].name, boss[0].hp, boss[0].max_hp, boss[0].mp, boss[0].max_mp);
+    printf("---------------------------------------------------------------------------------------------\n");
+}
+void PrintBossUser(ImgList character, int iNum) // 보스배틀시 유저 출력
+{
+    system("clear");
+    PrintingImg(character, iNum);
+    printf("---------------------------------------------------------------------------------------------\n");
+    printf("(%s)%s HP:%d/%d  MP:%d/%d  DMG:%d    ", userS.name, user_mon[selNum.selUser].name, user_mon[selNum.selUser].hp, user_mon[selNum.selUser].max_hp, user_mon[selNum.selUser].mp, user_mon[selNum.selUser].max_mp, user_mon[selNum.selUser].power);
+    printf("(Boss)%s HP:%d/%d  MP:%d/%d  DMG:???\n", boss[0].name, boss[0].hp, boss[0].max_hp, boss[0].mp, boss[0].max_mp);
+    printf("---------------------------------------------------------------------------------------------\n");
+}
+
+
+
+void BossUserAttack(void)  // 보스전 유저 공격
+{
+    if(userS.total_hp == 0)
+        return;
+    int i;
+    char sel[2];
+    int quit = 1;
+    ClearBuffer();
+    for(i=0; i<CountMon(user_mon); i++)
+    {
+        selNum.selUser = i;
+        if (user_mon[selNum.selUser].hp > 0 && boss[0].hp > 0)
+        {
+            while(quit == 1)
+            {
+                PrintBossUser(character, user_mon[selNum.selUser].iNum);
+                printf("** 사용자 턴 **\n");
+                printf("\n 어떻게 할까? \n");
+                printf("1)일반 공격  2)특수 공격  3)아이템 창 : ");
+                fgets(sel,2,stdin);
+                ClearBuffer();
+                if(sel[0] == '1')
+                {
+                    Attack01(character,selNum.selUser, 0, user_mon, boss);
+                    break;
+                }
+                else if(sel[0] == '2' && user_mon[selNum.selUser].mp > 50)
+                {
+                    Attack02(character,selNum.selUser, 0, user_mon, boss);
+                    break;
+                }
+                else if(sel[0] == '3')
+                {
+                    quit = ItemUse(); // 이거 하면 무조건 밖으로 나옴
+                }
+                else
+                {
+                    printf("잘못된 입력!!");
+                    sleep(1);
+                }
+            }
+        }
+    }
+}
+void BossAttack(void) // 보스 공격
+{
+    if(boss[0].hp == 0)
+        return;
+    int event;
+    event = rand() % 1923 + 100;
+    boss[0].power = event;
+    while(1)
+    {
+        event = rand() % CountMon(user_mon);
+        if (user_mon[event].hp == 0)
+            continue;
+        else
+            selNum.selUser = event;
+            break;
+    }
+    PrintBoss(character);
+    if (mash[0].count == 1){
+        mash[0].count = 0;
+        printf("\n\n %s 얼음효과!! 공격 불가능 \n", boss[0].name);
+        sleep(1);
+        return;
+    }
+    printf("** 보스 턴 **\n");
+    sleep(2);
+    
+    if(boss[0].hp <= 5000)
+    {
+        event = rand() % 100 + 1;
+        if(event <= 30)
+        {
+            boss[0].hp += 5000;
+            PrintBoss(character);
+            printf("%s의 아이스티 마시기!! 체력 5000 회복!!", boss[0].name);
+            sleep(2);
+        }
+        else
+        {
+            event = rand() % 100 + 1;
+            if(event <= 80)
+                Attack01(character,0,selNum.selUser,boss,user_mon);
+            else
+                Attack02(character,0,selNum.selUser,boss,user_mon);
+        }
+    }
+    else
+    {
+        event = rand() % 100 + 1;
+        if(event <= 80)
+            Attack01(character,0,selNum.selUser,boss,user_mon);
+        else
+            Attack02(character,0,selNum.selUser,boss,user_mon);
+    }
+}
+void BadEnd(int* quit) // 패배엔딩
+{
+    char cho[2];
+    printf("\n\n    보스전 패배!!! \n");
+    sleep(2);
+    while(1)
+    {
+        printf("\n\n다시 도전 하시겠습니까? (y or n) : ");
+        fgets(cho, 2, stdin);
+        if(cho[0] == 'y')
+            return;
+        else if(cho[0] == 'n')
+        {
+            *quit = 0;
+            return;
+        }
+        else
+            continue;
+    }
+}
+void HappyEnd()  // 승리엔딩
+{
+    printf("\n\n 전투 승리...!\n");
+    printf("\n\n 플레이 해주셔서 감사합니다.\n");
+}
+
+void BossBattleCore(int* quit)  // 보스 배틀 코어 함수 // 받아오는 값은 main 함수의 while문 동작시키는 변수 추가시킨거
+{
+    system("clear");
+    int turn = rand() % 2;
+    FILE* bossImg = NULL;
+    bossImg = fopen("txt/boss.txt", "r");
+    fread(character.imgarr, 1, 9999, bossImg);
+    printf("%s\n", character.imgarr);
+    fclose(bossImg);
+    printf("---------------------------------------------\n");
+    printf("(Boss)%s HP:%d/%d  MP:%d/%d  DMG:???\n", boss[0].name, boss[0].hp, boss[0].max_hp, boss[0].mp, boss[0].max_mp);
+    printf("---------------------------------------------\n");
+    printf("\n\n ***** 보스전 시작 *****\n");
+    sleep(2);
+    while(1)
+    {
+        UpdateHp();
+        if(userS.total_hp == 0)
+        {
+            BadEnd(quit);
+            break;
+        }
+        else if(boss[0].hp == 0)
+        {
+            HappyEnd();
+            *quit = 0;
+            break;
+        }
+
+        if(turn == 0)
+        {
+            PrintBoss(character);
+            printf("\n\n ***** 선공 주사위 굴림 유저 승 *****\n");
+            printf(" ***** 유저 선공 *****\n");
+            sleep(1);
+            BossUserAttack();
+            BossAttack();
+        }
+        else
+        {
+            PrintBoss(character);
+            printf("\n\n ***** 선공 주사위 굴림 보스 승 *****\n");
+            printf(" ***** 보스 선공 *****\n");
+            sleep(1);
+            BossAttack();
+            BossUserAttack();       
+        }
+    }
+}

@@ -1,0 +1,41 @@
+//공격동작 선택
+void BattleActSel(ImgList character, int num)   // 얼음효과 아이템 발동 추가
+{
+    if(num == 1)
+    {
+        Attack01(character, selNum.selUser, selNum.selNpc, user_mon, devmon);
+        if (mash[0].count == 1 && devmon[selNum.selNpc].hp > 0){
+            mash[0].count = 0;
+            PrintBattle(character, devmon[selNum.selNpc].iNum);
+            printf("\n\n %s 얼음효과!! 공격 불가능 \n", devmon[selNum.selNpc].name);
+            sleep(1);
+        }
+        else if( devmon[selNum.selNpc].hp == 0 ){  // 얼음효과 쓰고나서 상대방 죽였을때 프린트 안하게
+            mash[0].count = 0;
+        }
+        else{
+            NpcAttack(character);
+        }
+        
+    }
+    else if (num == 2)
+    {
+        Attack02(character, selNum.selUser, selNum.selNpc, user_mon, devmon);
+        if (mash[0].count == 1 && devmon[selNum.selNpc].hp > 0){
+            mash[0].count = 0;
+            PrintBattle(character, devmon[selNum.selNpc].iNum);
+            printf("\n\n %s 얼음효과!! 공격 불가능 \n", devmon[selNum.selNpc].name);
+            sleep(1);
+        }
+        else if( devmon[selNum.selNpc].hp == 0 ){ // 얼음효과 쓰고나서 상대방 죽였을때 프린트 안하게
+            mash[0].count = 0;
+        }
+        else{
+            NpcAttack(character);
+        }
+    }
+    else if (num == 3) // 아이템 사용 기능 추가
+    {
+        ItemUse();
+    }
+}
