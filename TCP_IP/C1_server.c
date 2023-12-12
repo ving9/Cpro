@@ -23,6 +23,7 @@ int main(int argc, char* argv[]){
         exit(1);
     }
     
+    // 0은 표준입력, 1은 표준 출력, 2는 표준 에러이니 3번부터 시작될듯?
     serv_sock = socket(PF_INET, SOCK_STREAM, 0);
     if(serv_sock == -1)
         error_handling("socket() error");
@@ -32,6 +33,8 @@ int main(int argc, char* argv[]){
     serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     serv_addr.sin_port = htons(atoi(argv[1]));
     if(bind(serv_sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == -1)
+    //(struct sockaddr*)&serv_addr 의 의미 : serv_addr 구조체 변수의 주소를 struct sockaddr 타입의 포인터로 형변환 시켜주겠다.
+    // 주소값 그 자체도 형변환 시킬 수 있는 것인가?
         error_handling("bind() error");
     
     if(listen(serv_sock, 5) == -1)
