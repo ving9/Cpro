@@ -41,15 +41,18 @@ int main(int argc, char* argv[]){
     clnt_adr_sz = sizeof(clnt_adr);
 
     for(i=0; i<5; i++){
-        clnt_sock = accept(serv_sock, (struct sockaddr*)&clnt_adr, &clnt_adr_sz);
-        if (clnt_sock == -1)
+        clnt_sock = accept(serv_sock, (struct sockaddr*)&clnt_adr, &clnt_adr_sz); // 서버가 실행되면 여기에서 클라이언트가 커넥트 하기 전까지 블로킹 상태
+        // 클라이언트와 소통할 소켓
+        if (clnt_sock == -1) // 연결 실패 알려줌
             error_handling("accept() error");
         else
             printf("Connected client %d \n", i+1);
-        while((str_len = read(clnt_sock, message, BUF_SIZE)) != 0){
+        while((str_len = read(clnt_sock, message, BUF_SIZE)) != 0){ // 클라이언트와 연결되고 나서 여기서 멈춰있게된다
+        // clnt_sock을 통해 수신한 데이터를 message에 저장하는거야 buf_size 만큼
         // 서버쪽에서 q를 입력하는 순간 close()가 작동되고
         // EOF(엔드오브파일) 메세지가 전송되며 수신함수는 0을 배출한다
             write(clnt_sock, message, str_len);
+            // message에 있는 데이터를 str_len만큼 보냄... 
             printf("%d\n", str_len);
         }
         printf("%d\n", str_len);
