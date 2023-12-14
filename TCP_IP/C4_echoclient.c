@@ -5,7 +5,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
-#define BUF_SIZE 1024
+#define BUF_SIZE 30
 void error_handling(char* message);
 
 int main(int argc, char* argv[]){
@@ -43,6 +43,8 @@ int main(int argc, char* argv[]){
 
         str_len = write(sock, message, strlen(message)); // strlen = 마지막 널문자를 제외한 길이 만큼 message에 있는 정보를 sock이라는 클라이언트 소켓에 보내겠다.
         // 아하 write함수는 비트의 크기만큼 보내기 때문에 문자열의 길이만큼 보내면 마지막 널문자는 보내지지 않음
+        // 결국 30자를 입력하면 보내지는건 개행 문자 포함 29문자
+        // 아...그래서 다시 읽을때 BUF_SIZE-1 해주는구나
         recv_len = 0;
         // str_len = read(clnt_sock, message, BUF_SIZE) 서버에서 수신하는 과정 (엔터까지 포함한 message)
 
@@ -56,7 +58,7 @@ int main(int argc, char* argv[]){
             recv_len += recv_cnt;
         }
         message[recv_len] = 0; // 이것은 통신해서 주고받은 것이니까 마지막에 널문자 없음
-        printf("Message from server: %s", message);
+        printf("Message from server: %s\n", message);
 
         // write(sock, message, strlen(message));
         // str_len = read(sock, message, BUF_SIZE-1);

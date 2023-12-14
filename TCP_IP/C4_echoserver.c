@@ -51,6 +51,7 @@ int main(int argc, char* argv[]){
         // clnt_sock을 통해 수신한 데이터를 message에 저장하는거야 buf_size 만큼
         // 서버쪽에서 q를 입력하는 순간 close()가 작동되고
         // EOF(엔드오브파일) 메세지가 전송되며 수신함수는 0을 배출한다
+        // str_len = write(sock, message, strlen(message)) 이렇게 보냈으니 마지막에 널문자 없음
             write(clnt_sock, message, str_len);
             // message에 있는 데이터를 str_len만큼 보냄... 
             printf("%d\n", str_len);

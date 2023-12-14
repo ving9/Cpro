@@ -1,51 +1,70 @@
 #include <stdio.h>
-void Swap(int** dp1, int** dp2)
+#include <stdlib.h>
+#include <time.h>
+
+// 배열의 값을 무작위로 재정렬하기
+void Shuffle(int arr[], int len)
 {
-    int* temp = *dp1;
-    *dp1 = *dp2;
-    *dp2 = temp;
+    srand(time(0));
+    int temp, i;
+    int event = rand() % 3;
+    if(event== 0){ // 가운데 항으로 오면서 배열의 첫항과 마지막항을 바꾸는 것
+        if(len % 2 == 0){
+            for(i=0;i<len/2;i++){
+                temp = arr[i];
+                arr[i] = arr[(len-1)-i];
+                arr[(len-1)-i] = temp;
+            }
+        }
+        else{
+            for(i=0;i<len/2 + 1;i++){
+                if(i == len/2){
+                    temp = arr[i];
+                    arr[i] = arr[0];
+                    arr[0] = temp;
+                }
+                temp = arr[i];
+                arr[i] = arr[(len-1)-i];
+                arr[(len-1)-i] = temp;
+            }
+        }
+    }
+    else if(event == 1){ // 배열의 첫항과 다음항을 계속 바꾸면서 뒤로 가는 것
+        for(i=0;i<len-1;i++){   
+            temp = arr[i];
+            arr[i] = arr[i+1];
+            arr[i+1] = temp;
+        }
+    }
+    else if(event == 2){ // 배열의 마지막 항과 마지막 이전항을 바꾸면서 앞으로 가는 것
+        for(i=0;i<len-1;i++){
+            temp = arr[len-1-i];
+            arr[len-1-i] = arr[len-2-i];
+            arr[len-2-i] = temp;
+        }
+    }
+
 }
 
-int main(void)
+int main(void) // 흠... 이것 뿐인가
 {
-    // int arr[20] = {17,1,2,3,4,5};
-    // int* pointer = arr;
+    srand(time(0));
+    int i;
+    int arr01[10];
+    int len_arr01 = sizeof(arr01)/sizeof(int);
 
-    // printf("%ld\n", sizeof(arr));
-    // printf("%ld\n\n", sizeof(pointer)); // 64비트 시스템의 64비트 컴파일러라서 주소값이 8바이트에 저장됨
+    for(i=0;i< len_arr01;i++)
+        arr01[i] = rand() % 100 + 1;
 
-    // printf("%p\n", (void *)arr); 
-    // printf("%p\n\n", (void *)pointer); // 이 두개는 사실상 같다
-
-    // printf("%d\n", *(arr+1));
-    // printf("%d\n", arr[1]);
-    // printf("%d\n", *(pointer+1)); 
-    // printf("%d\n\n", pointer[1]);
-
-    // int num1 = 10, num2 = 20, num3 = 30;
-    // int* arr2[3] = {&num1, &num2, &num3};
-    // printf("%d \n", *arr2[0]);
-    // printf("%p \n", arr2[0]);
-    // printf("%d \n", *arr2[1]);
-    // printf("%p \n", arr2[1]);
-    // printf("%d \n", *arr2[2]);
-    // printf("%p \n", arr2[2]);
-
-    int num1=10, num2=20, num3=30;
-    int* ptr1=&num1;
-    int* ptr2=&num2;
-    int* ptr3=&num3;
-    
-    int* ptrArr[] = {ptr1,ptr2,ptr3};
-    int** dptr = ptrArr;
-
-    printf("%d %d %d\n", *(ptrArr[0]), *(ptrArr[1]), *(ptrArr[2]));
-    printf("%d %d %d\n", *(dptr[0]), *(dptr[1]), *(dptr[2]));
-    printf("%p %p %p\n", ptr1, ptr2, ptr3);
-
+    for(i=0;i< len_arr01;i++)
+        printf("%3d", arr01[i]);
+    printf("\n");
+    Shuffle(arr01, len_arr01);
+    for(i=0;i< len_arr01;i++)
+        printf("%3d", arr01[i]);
+    printf("\n");
 
     
-
 
     return 0;
 }
