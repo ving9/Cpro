@@ -7,7 +7,8 @@
 #include <sys/wait.h>
 #include <sys/socket.h>
 
-#define BUF_SIZE 30
+#define BUF_SIZE 100
+
 void error_handling(char* message);
 void read_childproc(int sig);
 
@@ -19,6 +20,7 @@ int main(int argc, char* argv[]){
     socklen_t adr_sz;
     
     pid_t pid;
+    int fds[2];
     int str_len, state;
     char buf[BUF_SIZE];
 
@@ -50,6 +52,24 @@ int main(int argc, char* argv[]){
     if(listen(serv_sock, 5) == -1)
         error_handling("listen() error");
 
+    pipe(fds);
+    pid=fork();
+
+    if (pid == 0)
+    {
+        FILE* fp = fopen("echomsg.txt", "wt");
+        char msgbuf[BUF_SIZE];
+        int i, len;
+
+        for(i=0; i<10; i++)
+        {
+            len = read(fds[0], msgbuf, BUF_SIZE);
+            fwrite((void*)msgbuf, 1, len, fp); // 이곳은 단순히 서버와 통신하고 있는 프로세스로부터 정보를 받아와서 파일에 저장하는 일만 하는중
+        }
+        fclose(fp);
+        return 0;
+    }
+
     while(1)
     {
         adr_sz = sizeof(clnt_adr);
@@ -59,7 +79,6 @@ int main(int argc, char* argv[]){
             continue;
         else{
             puts("new client connected...");
-            printf("server fd : %d\n", clnt_sock);
         }
 
         pid = fork();
@@ -73,9 +92,11 @@ int main(int argc, char* argv[]){
             close(serv_sock); // 복사된 자식프로세스의 서버소켓을 닫아주는 과정 (결국 리슨은 부모에서 하기때문에)
             
             while((str_len = read(clnt_sock, buf, BUF_SIZE)) != 0)
+            {
                 write(clnt_sock, buf, str_len);
+                write(fds[1], buf, str_len);
+            }
 
-            printf("server fd : %d\n", clnt_sock);
             close(clnt_sock);
             puts("client disconnected...");
             return 0;

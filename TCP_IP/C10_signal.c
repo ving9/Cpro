@@ -3,10 +3,10 @@
 #include <unistd.h>
 #include <signal.h>
 
-void timeout(int sig){
+void timeout(int sig){ // 시그널 핸들러
     if(sig == SIGALRM)
         puts("Time out!");
-    alarm(2);
+    alarm(2); // 최초 알람 발생 이후에 반복 시켜주기 위해서
 }
 void keycontrol(int sig){
     if(sig == SIGINT)
@@ -24,5 +24,6 @@ int main(int argc, char* argv[]){
         puts("wait...");
         sleep(100);
     }
+
     return 0;
 }

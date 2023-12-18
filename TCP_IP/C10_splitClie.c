@@ -63,7 +63,8 @@ void write_routine(int sock, char* buf)
         fgets(buf, BUF_SIZE, stdin);
         if(!strcmp(buf, "q\n") || !strcmp(buf, "Q\n")) // 두 문자열 비교해서 같으면 0 아니면 0아닌값
         {
-            shutdown(sock, SHUT_WR);
+            shutdown(sock, SHUT_WR); // 지금 fd를 복사해온 상태기 때문에 이 함수를 나가서 close(sock) 을 만난다고 해도 EOF가 전달된다고 확답할 수 없음
+            // (부모의 fd도 살아 있을 수 있기 때문이다) 그래서 명시적으로 EOF를 전달해 준다고 생각하라
             return;
         }
         write(sock, buf, strlen(buf));
