@@ -52,11 +52,12 @@ int main(int argc, char* argv[]){
         // 서버쪽에서 q를 입력하는 순간 close()가 작동되고
         // EOF(엔드오브파일) 메세지가 전송되며 수신함수는 0을 배출한다
         // str_len = write(sock, message, strlen(message)) 이렇게 보냈으니 마지막에 널문자 없음
-            write(clnt_sock, message, str_len);
+            printf("%s\n", message);
+            char abc[] = "a,b,c,d,a,a,a,b,b,b,e,f,g,c,c,c,d,d,i,d";
+            write(clnt_sock, abc, 39);
             // message에 있는 데이터를 str_len만큼 보냄... 
-            printf("%d\n", str_len);
+            
         }
-        printf("%d\n", str_len);
         close(clnt_sock);
     }
     close(serv_sock);
