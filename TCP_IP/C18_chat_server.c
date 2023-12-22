@@ -57,13 +57,14 @@ int main(int argc, char* argv[])
 		pthread_detach(t_id);
 		printf("Connected client IP: %s \n", inet_ntoa(clnt_adr.sin_addr));
 	}
+
 	close(serv_sock);
 	return 0;
 }
 	
 void * handle_clnt(void * arg)
 {
-	int clnt_sock=*((int*)arg);
+	int clnt_sock=*((int*)arg); // 받아온 소켓의 FD를 읽기 위해서 주소를 int형 포인터로 바꾼다음 역참조
 	int str_len=0, i;
 	char msg[BUF_SIZE];
 	

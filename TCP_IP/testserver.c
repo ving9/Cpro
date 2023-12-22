@@ -1,5 +1,3 @@
-// 파이썬이랑 연결중
-
 #include <stdio.h> //입출력
 #include <stdlib.h> //문자열 변환, 의사 난수 생성
 #include <unistd.h> //표준 심볼 상수 및 자료형
@@ -15,7 +13,8 @@
 
 
 // 필요한 함수
-void error_handling(char* message);         // 오류처리
+void error_handling(char* message);
+void* send_py(void* arg);
 // void* handle_clnt(void* arg);               // C 클라이언트에서 파일 받아음
 
 
@@ -23,16 +22,9 @@ void error_handling(char* message);         // 오류처리
 // C 클라이언트
 int clnt_cnt = 0;               // 현재 연결된 클라이언트 수
 int clnt_socks[MAX_CLNT];       // 클라이언트 소켓 디스크립터 저장
+int sock_2022[11];
 
 pthread_mutex_t mutx;                   // 뮤텍스 생성을 위한 변수 선언
-
-
-// C 클라이언트 스레드 구조체
-// typedef struct THREAD{
-//     int socket;
-//     char* ip;
-// }THREAD;
-
 
 int main(int argc, char* argv[]){
     int serv_sock, clnt_sock;                   // 서버 소켓, 클라이언트 소켓
@@ -52,12 +44,13 @@ int main(int argc, char* argv[]){
 
     setlocale(LC_ALL, "en_US.UTF-8");
 
+    pthread_mutex_init(&mutx, NULL);
     // 주소 초기화 및 설정
     memset(&serv_adr, 0, sizeof(serv_adr));         // serv_adr 변수의 메모리를 모두 0으로 초기화
     serv_adr.sin_family = AF_INET;                  // IPv4 주소 사용
     serv_adr.sin_addr.s_addr = htonl(INADDR_ANY);   // 소켓이 모든 네트워크 인터페이스에 들어오는 패킷을 수신
     // serv_adr.sin_port = htons(atoi(argv[1]));
-    serv_adr.sin_port = htons(8998);             
+    serv_adr.sin_port = htons(9001);             
 
     // 주소 할당 및 연결요청 대기
     if(bind(serv_sock, (struct sockaddr*)&serv_adr, sizeof(serv_adr))== -1)
@@ -65,44 +58,27 @@ int main(int argc, char* argv[]){
     if (listen(serv_sock, 5)==-1)
         error_handling("listen() error");
     
-    clnt_adr_sz = sizeof(clnt_adr);
-    clnt_sock = accept(serv_sock, (struct sockaddr*)&clnt_adr, &clnt_adr_sz);
-    
-    
-    // FILE* fp2 = fopen("seoule13_2.csv", "w");
+    while(1)
+    {
+        clnt_adr_sz = sizeof(clnt_adr);
+        clnt_sock = accept(serv_sock, (struct sockaddr*)&clnt_adr, &clnt_adr_sz);
 
-    char buf[1024];      
-    char* buf_send[1024];
-    char num;
-    read(clnt_sock, &num, sizeof(num));
+        pthread_mutex_lock(&mutx);
+        clnt_socks[clnt_cnt++] = clnt_sock;
+        
+        // char sig;
+        // read(clnt_sock, &sig, sizeof(sig));
 
-    if (num == 'a'){
-        FILE* fp = fopen("seoule13.csv", "rb");
-        while (!feof(fp))
-        {   
-            while (!feof(fp)) // fp 파일의 끝이 아니라면 반복
-            {
-                fgets(buf, sizeof(buf), fp);//받는다
-                char *ptr = strtok(buf,",");//자른다 쉼표기준으로
-                for (int i = 0; i < 4; i++) // 문자열 15번 반복
-                {
-                    buf_send[i] = ptr;
-                    if (i==0 || i==2 || i==3) // 문자열내의 0,2,3 번 뽑는다
-                    {
-                        send(clnt_sock, buf_send[i], strlen(buf_send[i]), 0); // 출력한것들 보낸다 한 줄씩
-                        send(clnt_sock,",",1,0);
-                    }
-                    ptr = strtok(NULL,","); // 다음 문자열 자르고 포인터 반환
-                }
-                break;
-            }
-        }
-        fclose(fp);
-        shutdown(clnt_sock, SHUT_WR);
-    }
+        pthread_mutex_unlock(&mutx);
    
-    
-    
+        pthread_create(&t_id, NULL, send_py, (void*)&clnt_sock);
+        pthread_detach(t_id);
+ 
+        
+        // pthread_create(&t_id, NULL, send_data, (void*)&clnt_sock);
+        // pthread_detach(t_id);
+    }
+    // close(serv_sock);
     return 0;
 }
 
@@ -112,3 +88,66 @@ void error_handling(char* message){
     fputc('\n', stderr);
     exit(1);
 }
+
+void* send_py(void* arg)
+{
+    int clnt_sock=*((int*)arg);
+    char buf[1024];      
+    char* buf_send[1024];
+
+    char num;
+    read(clnt_sock, &num, sizeof(num));
+
+    pthread_mutex_lock(&mutx);
+    if (num == 'a')
+    {
+        FILE* fp = fopen("1_2013_busan.csv", "rb");
+  
+        while (!feof(fp)) // fp 파일의 끝이 아니라면 반복
+        {
+            fgets(buf, sizeof(buf), fp);//받는다
+            char *ptr = strtok(buf,",");//자른다 쉼표기준으로
+            for (int i = 0; i < 3; i++) 
+            {
+                if (i==0 || i==1 || i==2) // 문자열내의 0,2,3 번 뽑는다
+                {
+                    buf_send[i] = ptr;
+                    send(clnt_sock, buf_send[i], strlen(buf_send[i]), 0); // 출력한것들 보낸다 한 줄씩
+                    send(clnt_sock,",",1,0);
+                     // 다음 문자열 자르고 포인터 반환
+                }
+                ptr = strtok(NULL,",");
+            }
+        }
+        fclose(fp);
+    }
+
+    else if (num == 'b')
+    {
+        FILE* fp = fopen("seoule13.csv", "rb");
+  
+        while (!feof(fp)) // fp 파일의 끝이 아니라면 반복
+        {
+            fgets(buf, sizeof(buf), fp);//받는다
+            char *ptr = strtok(buf,",");//자른다 쉼표기준으로
+            for (int i = 0; i < 4; i++) // 문자열 15번 반복
+            {
+                buf_send[i] = ptr;
+                if (i==0 || i==2 || i==3) // 문자열내의 0,2,3 번 뽑는다
+                {
+                    send(clnt_sock, buf_send[i], strlen(buf_send[i]), 0); // 출력한것들 보낸다 한 줄씩
+                    send(clnt_sock,",",1,0);
+                }
+                ptr = strtok(NULL,","); // 다음 문자열 자르고 포인터 반환
+            }
+        }
+        fclose(fp);
+    }
+
+    shutdown(clnt_sock, SHUT_WR);
+    shutdown(clnt_sock, SHUT_RDWR);
+    // clnt_cnt--;
+    pthread_mutex_unlock(&mutx);
+    return NULL;
+}
+
