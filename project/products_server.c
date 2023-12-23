@@ -13,29 +13,21 @@
 
 void error_handling(char* message);
 void* handle_clnt(void* arg);               // C클라이언트 파일 쓰레드 통신
-void* send_py(void* arg);                    // 파이썬 클라이언트 통신
-
+void* handle_2022(void* arg);               
+void* send_py(void* arg);                 // 파이썬 클라이언트 통신
 
 // 임계영역 구성할 전역변수
 int clnt_cnt = 0;               // 현재 연결된 클라이언트 수
 int clnt_socks[MAX_CLNT];       // 클라이언트 소켓 디스크립터 저장
+int socks_2022[11];             // 2022년도 클라이언트와 접속한 소켓을 저장하기 위한 배열
+pthread_mutex_t mutx;           // 뮤텍스 생성을 위한 변수 선언
 
-pthread_mutex_t mutx;                   // 뮤텍스 생성을 위한 변수 선언
-
-int main(int argc, char* argv[]){
-    argc = 2;
-    argv[1] = "8889";
+int main(){
 
     int serv_sock, clnt_sock;                   // 서버 소켓, 클라이언트 소켓
     struct sockaddr_in serv_adr, clnt_adr;      // 서버 소켓 주소, 클라이언트 소켓 주소
     int clnt_adr_sz;                            // 클라이언트 소켓 주소 정보의 크기
-    
     pthread_t t_id;                             // 쓰레드 생성에 사용될 쓰레드 변수
-
-    if (argc!=2){
-        printf("Usage: %s <port>\n", argv[0]);      // argv[0]: 포트번호
-        exit(1);                                    // 비정상적인 종료
-    }
 
     // 뮤텍스 초기화 (뮤텍스 변수 전달)
     pthread_mutex_init(&mutx, NULL);
@@ -52,7 +44,7 @@ int main(int argc, char* argv[]){
     memset(&serv_adr, 0, sizeof(serv_adr));         // serv_adr 변수의 메모리를 모두 0으로 초기화
     serv_adr.sin_family = AF_INET;                  // IPv4 주소 사용
     serv_adr.sin_addr.s_addr = htonl(INADDR_ANY);   // 소켓이 모든 네트워크 인터페이스에 들어오는 패킷을 수신
-    serv_adr.sin_port = htons(atoi(argv[1]));             // 서버 포트 번호 설정 8888
+    serv_adr.sin_port = htons(8888);             // 서버 포트 번호 설정 8888
 
     // 주소 할당 및 연결요청 대기
     if(bind(serv_sock, (struct sockaddr*)&serv_adr, sizeof(serv_adr))== -1)
@@ -61,57 +53,50 @@ int main(int argc, char* argv[]){
         error_handling("listen() error");
 
 
-    
-
-    // ===========================================================
     // 클라이언트 연결 수락
     while(1){
     
         clnt_adr_sz = sizeof(clnt_adr);
         clnt_sock = accept(serv_sock, (struct sockaddr*)&clnt_adr, &clnt_adr_sz);
 
-
-        /******************/
-        /* 임계 영역 개크게시작 */
         pthread_mutex_lock(&mutx);      // 뮤텍스 LOCK: 다른 쓰레드가 자원에 접근X
 
         // 연결된 클라이언트의 정보를 배열에 저장
         clnt_socks[clnt_cnt++] = clnt_sock;     // 새로운 연결이 형성될 때마다 변수 clnt_cnt 배열 clnt_socks에 해당 정보를 등록
         
         pthread_mutex_unlock(&mutx);    // 뮤텍스 LOCK 해제
-        /* 임계영역 개크게종료 */
-        /******************/
-
 
         // 클라이언트에 서비스를 제공하기 위한 쓰레드 생성
-        // if (clnt_cnt <= 3)
-        // {
-        //     pthread_create(&t_id, NULL, handle_clnt, (void*)&clnt_sock);
+        if (clnt_sock <= 20)
+        {
+            pthread_create(&t_id, NULL, handle_clnt, (void*)&clnt_sock);
+            pthread_detach(t_id);
+        }
 
-        //     // 종료된 쓰레드가 메모리에서 완전히 소멸
-        //     // 쓰레드 생성 후 바로 detach 함수 호출하여 위 쓰레드가 종료되면 자동으로 메모리에서 해제
+        // if(clnt_sock <= 31)   // 2022년 클라이언트를 따로 시도해봤으나 원하는대로 작동되지 않음
+        // {
+        //     socks_2022[0] = clnt_sock;
+        //     pthread_create(&t_id, NULL, handle_2022, (void*)&clnt_sock);
         //     pthread_detach(t_id);
         // }
 
-        // 파이썬 연결
-        pthread_create(&t_id, NULL, send_py, (void*)&clnt_sock);
-        pthread_detach(t_id);
-
+        // 파이썬 통신 쓰레드 생성
+        else
+        {
+            pthread_create(&t_id, NULL, send_py, (void*)&clnt_sock);
+            pthread_detach(t_id);
+        }
+        
     }
 
-    // close(serv_sock);
     return 0;
 }
-
-
 
 void error_handling(char* message){
     fputs(message, stderr);
     fputc('\n', stderr);
     exit(1);
 }
-
-
 
 
 // C클라이언트 파일 쓰레드
@@ -130,7 +115,7 @@ void* handle_clnt(void* arg){           // arg: (void*)&clnt_sock
         fname = fopen(name, "w");
         if (fname == NULL){
             printf("파일오픈 실패! \n");
-            return 0;
+            return -1;
         }
     }
     else if (clnt_cnt == 2){
@@ -138,7 +123,7 @@ void* handle_clnt(void* arg){           // arg: (void*)&clnt_sock
         fname = fopen(name, "w");
         if (fname == NULL){
             printf("파일오픈 실패! \n");
-            return 0;
+            return -1;
         }
     }
     else if (clnt_cnt == 3){
@@ -146,130 +131,147 @@ void* handle_clnt(void* arg){           // arg: (void*)&clnt_sock
         fname = fopen(name, "w");
         if (fname == NULL){
             printf("파일오픈 실패! \n");
-            return 0;
+            return -1;
         }
     }
     else if (clnt_cnt == 4){
-        fname = fopen("2013대전.csv", "w");
+        sprintf(name, "%d_2013_daejeon.csv", clnt_cnt);
+        fname = fopen(name, "w");
         if (fname == NULL){
             printf("파일오픈 실패! \n");
-            return 0;
+            return -1;
         }
     }
     else if (clnt_cnt == 5){
-        fname = fopen("2013강원.csv", "w");
+        sprintf(name, "%d_2013_gangwon.csv", clnt_cnt);
+        fname = fopen(name, "w");
         if (fname == NULL){
             printf("파일오픈 실패! \n");
-            return 0;
+            return -1;
         }
     }
     else if (clnt_cnt == 6){
-        fname = fopen("2013광주.csv", "w");
+        sprintf(name, "%d_2013_gwangju.csv", clnt_cnt);
+        fname = fopen(name, "w");
         if (fname == NULL){
             printf("파일오픈 실패! \n");
-            return 0;
+            return -1;
         }
     }
     else if (clnt_cnt == 7){
-        fname = fopen("2013경기.csv", "w");
+        sprintf(name, "%d_2013_gyeonggi.csv", clnt_cnt);
+        fname = fopen(name, "w");
         if (fname == NULL){
             printf("파일오픈 실패! \n");
-            return 0;
+            return -1;
         }
     }
     else if (clnt_cnt == 8){
-        fname = fopen("2013제주.csv", "w");
+        sprintf(name, "%d_2013_jeju.csv", clnt_cnt);
+        fname = fopen(name, "w");
         if (fname == NULL){
             printf("파일오픈 실패! \n");
-            return 0;
+            return -1;
         }
     }
     else if (clnt_cnt == 9){
-        fname = fopen("2013전주.csv", "w");
+        sprintf(name, "%d_2013_jeonju.csv", clnt_cnt);
+        fname = fopen(name, "w");
         if (fname == NULL){
             printf("파일오픈 실패! \n");
-            return 0;
+            return -1;
         }
     }
     else if (clnt_cnt == 10){
-        fname = fopen("2013서울.csv", "w");
+        sprintf(name, "%d_2013_seoul.csv", clnt_cnt);
+        fname = fopen(name, "w");
         if (fname == NULL){
             printf("파일오픈 실패! \n");
-            return 0;
+            return -1;
         }
     }
     //================================================
     // 14년도 파일
     else if (clnt_cnt == 11){
-        fname = fopen("2014부산.csv", "w");
+        sprintf(name, "%d_2014_busan.csv", clnt_cnt);
+        fname = fopen(name, "w");
         if (fname == NULL){
             printf("파일오픈 실패! \n");
-            return 0;
+            return -1;
         }
     }
     else if (clnt_cnt == 12){
-        fname = fopen("2014충북.csv", "w");
+        sprintf(name, "%d_2014_chungbuk.csv", clnt_cnt);
+        fname = fopen(name, "w");
         if (fname == NULL){
             printf("파일오픈 실패! \n");
-            return 0;
+            return -1;
         }
     }
 
     else if (clnt_cnt == 13){
-        fname = fopen("2014대구.csv", "w");
+        sprintf(name, "%d_2014_daegu.csv", clnt_cnt);
+        fname = fopen(name, "w");
         if (fname == NULL){
             printf("파일오픈 실패! \n");
-            return 0;
+            return -1;
         }
     }
 
     else if (clnt_cnt == 14){
-        fname = fopen("2014대전.csv", "w");
+        sprintf(name, "%d_2014_daejeon.csv", clnt_cnt);
+        fname = fopen(name, "w");
         if (fname == NULL){
             printf("파일오픈 실패! \n");
-            return 0;
+            return -1;
         }
     }
     else if (clnt_cnt == 15){
-        fname = fopen("2014강원.csv", "w");
+        sprintf(name, "%d_2014_gangwon.csv", clnt_cnt);
+        fname = fopen(name, "w");
         if (fname == NULL){
             printf("파일오픈 실패! \n");
-            return 0;
+            return -1;
         }
     }
     else if (clnt_cnt == 16){
-        fname = fopen("2014광주.csv", "w");
+        sprintf(name, "%d_2014_gwangju.csv", clnt_cnt);
+        fname = fopen(name, "w");
         if (fname == NULL){
             printf("파일오픈 실패! \n");
-            return 0;
+            return -1;
         }
     }
     else if (clnt_cnt == 17){
-        fname = fopen("2014경기.csv", "w");
+        sprintf(name, "%d_2014_gyeonggi.csv", clnt_cnt);
+        fname = fopen(name, "w");
         if (fname == NULL){
             printf("파일오픈 실패! \n");
-            return 0;
+            return -1;
         }
     }
     else if (clnt_cnt == 18){
-        fname = fopen("2014제주.csv", "w");
+        sprintf(name, "%d_2014_jeju.csv", clnt_cnt);
+        fname = fopen(name, "w");
         if (fname == NULL){
             printf("파일오픈 실패! \n");
-            return 0;
+            return -1;
         }
     }
     else if (clnt_cnt == 19){
-        fname = fopen("2014전주.csv", "w");
+        sprintf(name, "%d_2014_jeonju.csv", clnt_cnt);
+        fname = fopen(name, "w");
         if (fname == NULL){
             printf("파일오픈 실패! \n");
-            return 0;
+            return -1;
         }
     }
     else if (clnt_cnt == 20){
-        fname = fopen("2014서울.csv", "w");
+        sprintf(name, "%d_2014_seoul.csv", clnt_cnt);
+        fname = fopen(name, "w");
         if (fname == NULL){
             printf("파일오픈 실패! \n");
-            return 0;
+            return -1;
         }
     }
 
@@ -286,20 +288,48 @@ void* handle_clnt(void* arg){           // arg: (void*)&clnt_sock
     return NULL;
 }
 
+// 2022년 C클라이언트 파일 쓰레드 (동작 안함)
+void* handle_2022(void* arg)
+{
+    int clnt_sock = *((int*)arg);   
+    int str_len = 0;               
+    char msg[BUF_SIZE];         
+    char name[50];
+    FILE* fname;
 
+    pthread_mutex_lock(&mutx);    
+    if (clnt_cnt == 21){
+        sprintf(name, "%d_2022_busan.csv", clnt_cnt);
+        fname = fopen(name, "w");
+        if (fname == NULL){
+            printf("파일오픈 실패! \n");
+            return -1;
+        }
+    }
+
+    while((str_len = read(clnt_sock, msg, sizeof(msg))) != 0){    
+        msg[str_len] = '\0';
+        fputs(msg, fname);
+        printf("%s", msg);
+    }
+    fclose(fname);
+    pthread_mutex_unlock(&mutx);   
+    return NULL;
+}
+
+// 파이썬과 통신하는 쓰레드
 void* send_py(void* arg)
 {
     int clnt_sock=*((int*)arg);
-    char buf[1024];      
-    char* buf_send[1024];
+    char buf[256];      
+    char* buf_send[8];
 
     char num;
     read(clnt_sock, &num, sizeof(num));
-
     pthread_mutex_lock(&mutx);
-    if (num == 'd')
+    if (num == 'a')
     {
-        
+        printf("%c", num);
         FILE* fp = fopen("1_2013_busan.csv", "rb");
         while (!feof(fp)) // fp 파일의 끝이 아니라면 반복
         {
@@ -307,43 +337,360 @@ void* send_py(void* arg)
             char *ptr = strtok(buf,",");//자른다 쉼표기준으로
             for (int i = 0; i < 3; i++) 
             {
-                if (i==0 || i==1 || i==2) // 문자열내의 0,1,5,14 번 뽑는다
-                {
-                    buf_send[i] = ptr;
-                    send(clnt_sock, buf_send[i], strlen(buf_send[i]), 0); // 출력한것들 보낸다 한 줄씩
-                    send(clnt_sock,",",1,0);
-                }
+                buf_send[i] = ptr;
+                send(clnt_sock, buf_send[i], strlen(buf_send[i]), 0); // 출력한것들 보낸다 한 줄씩
+                send(clnt_sock,",",1,0);
                 ptr = strtok(NULL,","); // 다음 문자열 자르고 포인터 반환
             }
         }
         fclose(fp);
     }
-    // else if (num == 'b')
-    // {
-    //     FILE* fp = fopen("seoule13.csv", "rb");
-  
-    //     while (!feof(fp)) // fp 파일의 끝이 아니라면 반복
-    //     {
-    //         fgets(buf, sizeof(buf), fp);//받는다
-    //         char *ptr = strtok(buf,",");//자른다 쉼표기준으로
-    //         for (int i = 0; i < 4; i++) // 문자열 15번 반복
-    //         {
-    //             buf_send[i] = ptr;
-    //             if (i==0 || i==2 || i==3) // 문자열내의 0,2,3 번 뽑는다
-    //             {
-    //                 send(clnt_sock, buf_send[i], strlen(buf_send[i]), 0); // 출력한것들 보낸다 한 줄씩
-    //                 send(clnt_sock,",",1,0);
-    //             }
-    //             ptr = strtok(NULL,","); // 다음 문자열 자르고 포인터 반환
-    //         }
-    //     }
-    //     fclose(fp);
-    // }
-
-
+    else if (num == 'b')
+    {
+        printf("%c", num);
+        FILE* fp = fopen("2_2013_chungbuck.csv", "rb");
+        while (!feof(fp)) // fp 파일의 끝이 아니라면 반복
+        {
+            fgets(buf, sizeof(buf), fp);//받는다
+            char *ptr = strtok(buf,",");//자른다 쉼표기준으로
+            for (int i = 0; i < 3; i++) 
+            {
+                buf_send[i] = ptr;
+                send(clnt_sock, buf_send[i], strlen(buf_send[i]), 0); // 출력한것들 보낸다 한 줄씩
+                send(clnt_sock,",",1,0);
+                ptr = strtok(NULL,","); // 다음 문자열 자르고 포인터 반환
+            }
+        }
+        fclose(fp);
+    }
+    else if (num == 'c')
+    {
+        FILE* fp = fopen("3_2013_daegu.csv", "rb");
+        while (!feof(fp)) // fp 파일의 끝이 아니라면 반복
+        {
+            fgets(buf, sizeof(buf), fp);//받는다
+            char *ptr = strtok(buf,",");//자른다 쉼표기준으로
+            for (int i = 0; i < 3; i++) 
+            {
+                buf_send[i] = ptr;
+                send(clnt_sock, buf_send[i], strlen(buf_send[i]), 0); // 출력한것들 보낸다 한 줄씩
+                send(clnt_sock,",",1,0);
+                ptr = strtok(NULL,","); // 다음 문자열 자르고 포인터 반환
+            }
+        }
+        fclose(fp);
+    }
+    else if (num == 'd')
+    {
+        FILE* fp = fopen("4_2013_daejeon.csv", "rb");
+        while (!feof(fp)) // fp 파일의 끝이 아니라면 반복
+        {
+            fgets(buf, sizeof(buf), fp);//받는다
+            char *ptr = strtok(buf,",");//자른다 쉼표기준으로
+            for (int i = 0; i < 3; i++) 
+            {
+                buf_send[i] = ptr;
+                send(clnt_sock, buf_send[i], strlen(buf_send[i]), 0); // 출력한것들 보낸다 한 줄씩
+                send(clnt_sock,",",1,0);
+                ptr = strtok(NULL,","); // 다음 문자열 자르고 포인터 반환
+            }
+        }
+        fclose(fp);
+    }
+    else if (num == 'e')
+    {
+        FILE* fp = fopen("5_2013_gangwon.csv", "rb");
+        while (!feof(fp)) // fp 파일의 끝이 아니라면 반복
+        {
+            fgets(buf, sizeof(buf), fp);//받는다
+            char *ptr = strtok(buf,",");//자른다 쉼표기준으로
+            for (int i = 0; i < 3; i++) 
+            {
+                buf_send[i] = ptr;
+                send(clnt_sock, buf_send[i], strlen(buf_send[i]), 0); // 출력한것들 보낸다 한 줄씩
+                send(clnt_sock,",",1,0);
+                ptr = strtok(NULL,","); // 다음 문자열 자르고 포인터 반환
+            }
+        }
+        fclose(fp);
+    }
+    else if (num == 'f')
+    {
+        FILE* fp = fopen("6_2013_gwangju.csv", "rb");
+        while (!feof(fp)) // fp 파일의 끝이 아니라면 반복
+        {
+            fgets(buf, sizeof(buf), fp);//받는다
+            char *ptr = strtok(buf,",");//자른다 쉼표기준으로
+            for (int i = 0; i < 3; i++) 
+            {
+                buf_send[i] = ptr;
+                send(clnt_sock, buf_send[i], strlen(buf_send[i]), 0); // 출력한것들 보낸다 한 줄씩
+                send(clnt_sock,",",1,0);
+                ptr = strtok(NULL,","); // 다음 문자열 자르고 포인터 반환
+            }
+        }
+        fclose(fp);
+    }
+    else if (num == 'g')
+    {
+        FILE* fp = fopen("7_2013_gyeonggi.csv", "rb");
+        while (!feof(fp)) // fp 파일의 끝이 아니라면 반복
+        {
+            fgets(buf, sizeof(buf), fp);//받는다
+            char *ptr = strtok(buf,",");//자른다 쉼표기준으로
+            for (int i = 0; i < 3; i++) 
+            {
+                buf_send[i] = ptr;
+                send(clnt_sock, buf_send[i], strlen(buf_send[i]), 0); // 출력한것들 보낸다 한 줄씩
+                send(clnt_sock,",",1,0);
+                ptr = strtok(NULL,","); // 다음 문자열 자르고 포인터 반환
+            }
+        }
+        fclose(fp);
+    }
+    else if (num == 'h')
+    {
+        FILE* fp = fopen("8_2013_jeju.csv", "rb");
+        while (!feof(fp)) // fp 파일의 끝이 아니라면 반복
+        {
+            fgets(buf, sizeof(buf), fp);//받는다
+            char *ptr = strtok(buf,",");//자른다 쉼표기준으로
+            for (int i = 0; i < 3; i++) 
+            {
+                buf_send[i] = ptr;
+                send(clnt_sock, buf_send[i], strlen(buf_send[i]), 0); // 출력한것들 보낸다 한 줄씩
+                send(clnt_sock,",",1,0);
+                ptr = strtok(NULL,","); // 다음 문자열 자르고 포인터 반환
+            }
+        }
+        fclose(fp);
+    }
+    else if (num == 'i')
+    {
+        FILE* fp = fopen("9_2013_jeonju.csv", "rb");
+        while (!feof(fp)) // fp 파일의 끝이 아니라면 반복
+        {
+            fgets(buf, sizeof(buf), fp);//받는다
+            char *ptr = strtok(buf,",");//자른다 쉼표기준으로
+            for (int i = 0; i < 3; i++) 
+            {
+                buf_send[i] = ptr;
+                send(clnt_sock, buf_send[i], strlen(buf_send[i]), 0); // 출력한것들 보낸다 한 줄씩
+                send(clnt_sock,",",1,0);
+                ptr = strtok(NULL,","); // 다음 문자열 자르고 포인터 반환
+            }
+        }
+        fclose(fp);
+    }
+    else if (num == 'j')
+    {
+        FILE* fp = fopen("10_2013_seoul.csv", "rb");
+        while (!feof(fp)) // fp 파일의 끝이 아니라면 반복
+        {
+            fgets(buf, sizeof(buf), fp);//받는다
+            char *ptr = strtok(buf,",");//자른다 쉼표기준으로
+            for (int i = 0; i < 3; i++) 
+            {
+                buf_send[i] = ptr;
+                send(clnt_sock, buf_send[i], strlen(buf_send[i]), 0); // 출력한것들 보낸다 한 줄씩
+                send(clnt_sock,",",1,0);
+                ptr = strtok(NULL,","); // 다음 문자열 자르고 포인터 반환
+            }
+        }
+        fclose(fp);
+    }
+    else if (num == 'k')
+    {
+        FILE* fp = fopen("11_2014_busan.csv", "rb");
+        while (!feof(fp)) // fp 파일의 끝이 아니라면 반복
+        {
+            fgets(buf, sizeof(buf), fp);//받는다
+            char *ptr = strtok(buf,",");//자른다 쉼표기준으로
+            for (int i = 0; i < 3; i++) 
+            {
+                buf_send[i] = ptr;
+                send(clnt_sock, buf_send[i], strlen(buf_send[i]), 0); // 출력한것들 보낸다 한 줄씩
+                send(clnt_sock,",",1,0);
+                ptr = strtok(NULL,","); // 다음 문자열 자르고 포인터 반환
+            }
+        }
+        fclose(fp);
+    }
+    else if (num == 'l')
+    {
+        FILE* fp = fopen("12_2014_chungbuk.csv", "rb");
+        while (!feof(fp)) // fp 파일의 끝이 아니라면 반복
+        {
+            fgets(buf, sizeof(buf), fp);//받는다
+            char *ptr = strtok(buf,",");//자른다 쉼표기준으로
+            for (int i = 0; i < 3; i++) 
+            {
+                buf_send[i] = ptr;
+                send(clnt_sock, buf_send[i], strlen(buf_send[i]), 0); // 출력한것들 보낸다 한 줄씩
+                send(clnt_sock,",",1,0);
+                ptr = strtok(NULL,","); // 다음 문자열 자르고 포인터 반환
+            }
+        }
+        fclose(fp);
+    }
+    else if (num == 'm')
+    {
+        FILE* fp = fopen("13_2014_daegu.csv", "rb");
+        while (!feof(fp)) // fp 파일의 끝이 아니라면 반복
+        {
+            fgets(buf, sizeof(buf), fp);//받는다
+            char *ptr = strtok(buf,",");//자른다 쉼표기준으로
+            for (int i = 0; i < 3; i++) 
+            {
+                buf_send[i] = ptr;
+                send(clnt_sock, buf_send[i], strlen(buf_send[i]), 0); // 출력한것들 보낸다 한 줄씩
+                send(clnt_sock,",",1,0);
+                ptr = strtok(NULL,","); // 다음 문자열 자르고 포인터 반환
+            }
+        }
+        fclose(fp);
+    }
+    else if (num == 'n')
+    {
+        FILE* fp = fopen("14_2014_daejeon.csv", "rb");
+        while (!feof(fp)) // fp 파일의 끝이 아니라면 반복
+        {
+            fgets(buf, sizeof(buf), fp);//받는다
+            char *ptr = strtok(buf,",");//자른다 쉼표기준으로
+            for (int i = 0; i < 3; i++) 
+            {
+                buf_send[i] = ptr;
+                send(clnt_sock, buf_send[i], strlen(buf_send[i]), 0); // 출력한것들 보낸다 한 줄씩
+                send(clnt_sock,",",1,0);
+                ptr = strtok(NULL,","); // 다음 문자열 자르고 포인터 반환
+            }
+        }
+        fclose(fp);
+    }
+    else if (num == 'o')
+    {
+        FILE* fp = fopen("15_2014_gangwon.csv", "rb");
+        while (!feof(fp)) // fp 파일의 끝이 아니라면 반복
+        {
+            fgets(buf, sizeof(buf), fp);//받는다
+            char *ptr = strtok(buf,",");//자른다 쉼표기준으로
+            for (int i = 0; i < 3; i++) 
+            {
+                buf_send[i] = ptr;
+                send(clnt_sock, buf_send[i], strlen(buf_send[i]), 0); // 출력한것들 보낸다 한 줄씩
+                send(clnt_sock,",",1,0);
+                ptr = strtok(NULL,","); // 다음 문자열 자르고 포인터 반환
+            }
+        }
+        fclose(fp);
+    }
+    else if (num == 'p')
+    {
+        FILE* fp = fopen("16_2014_gwangju.csv", "rb");
+        while (!feof(fp)) // fp 파일의 끝이 아니라면 반복
+        {
+            fgets(buf, sizeof(buf), fp);//받는다
+            char *ptr = strtok(buf,",");//자른다 쉼표기준으로
+            for (int i = 0; i < 3; i++) 
+            {
+                buf_send[i] = ptr;
+                send(clnt_sock, buf_send[i], strlen(buf_send[i]), 0); // 출력한것들 보낸다 한 줄씩
+                send(clnt_sock,",",1,0);
+                ptr = strtok(NULL,","); // 다음 문자열 자르고 포인터 반환
+            }
+        }
+        fclose(fp);
+    }
+    else if (num == 'q')
+    {
+        FILE* fp = fopen("17_2014_gyeonggi.csv", "rb");
+        while (!feof(fp)) // fp 파일의 끝이 아니라면 반복
+        {
+            fgets(buf, sizeof(buf), fp);//받는다
+            char *ptr = strtok(buf,",");//자른다 쉼표기준으로
+            for (int i = 0; i < 3; i++) 
+            {
+                buf_send[i] = ptr;
+                send(clnt_sock, buf_send[i], strlen(buf_send[i]), 0); // 출력한것들 보낸다 한 줄씩
+                send(clnt_sock,",",1,0);
+                ptr = strtok(NULL,","); // 다음 문자열 자르고 포인터 반환
+            }
+        }
+        fclose(fp);
+    }
+    else if (num == 'r')
+    {
+        FILE* fp = fopen("18_2014_jeju.csv", "rb");
+        while (!feof(fp)) // fp 파일의 끝이 아니라면 반복
+        {
+            fgets(buf, sizeof(buf), fp);//받는다
+            char *ptr = strtok(buf,",");//자른다 쉼표기준으로
+            for (int i = 0; i < 3; i++) 
+            {
+                buf_send[i] = ptr;
+                send(clnt_sock, buf_send[i], strlen(buf_send[i]), 0); // 출력한것들 보낸다 한 줄씩
+                send(clnt_sock,",",1,0);
+                ptr = strtok(NULL,","); // 다음 문자열 자르고 포인터 반환
+            }
+        }
+        fclose(fp);
+    }
+    else if (num == 's')
+    {
+        FILE* fp = fopen("19_2014_jeonju.csv", "rb");
+        while (!feof(fp)) // fp 파일의 끝이 아니라면 반복
+        {
+            fgets(buf, sizeof(buf), fp);//받는다
+            char *ptr = strtok(buf,",");//자른다 쉼표기준으로
+            for (int i = 0; i < 3; i++) 
+            {
+                buf_send[i] = ptr;
+                send(clnt_sock, buf_send[i], strlen(buf_send[i]), 0); // 출력한것들 보낸다 한 줄씩
+                send(clnt_sock,",",1,0);
+                ptr = strtok(NULL,","); // 다음 문자열 자르고 포인터 반환
+            }
+        }
+        fclose(fp);
+    }
+    else if (num == 't')
+    {
+        FILE* fp = fopen("20_2014_seoul.csv", "rb");
+        while (!feof(fp)) // fp 파일의 끝이 아니라면 반복
+        {
+            fgets(buf, sizeof(buf), fp);//받는다
+            char *ptr = strtok(buf,",");//자른다 쉼표기준으로
+            for (int i = 0; i < 3; i++) 
+            {
+                buf_send[i] = ptr;
+                send(clnt_sock, buf_send[i], strlen(buf_send[i]), 0); // 출력한것들 보낸다 한 줄씩
+                send(clnt_sock,",",1,0);
+                ptr = strtok(NULL,","); // 다음 문자열 자르고 포인터 반환
+            }
+        }
+        fclose(fp);
+    }
+    else if (num == 'A') // 2022년 테스트를 위해 만들었지만 여기서 특정 소켓으로 데이터 전송하는 데에 실패...
+    {
+        printf("%c", num);
+        write(socks_2022[0], &num, 1);
+        FILE* fp = fopen("1_2022_busan.csv", "rb");
+        while (!feof(fp)) // fp 파일의 끝이 아니라면 반복
+        {
+            fgets(buf, sizeof(buf), fp);//받는다
+            char *ptr = strtok(buf,",");//자른다 쉼표기준으로
+            for (int i = 0; i < 3; i++) 
+            {
+                buf_send[i] = ptr;
+                send(clnt_sock, buf_send[i], strlen(buf_send[i]), 0); // 출력한것들 보낸다 한 줄씩
+                send(clnt_sock,",",1,0);
+                ptr = strtok(NULL,","); // 다음 문자열 자르고 포인터 반환
+            }
+        }
+        fclose(fp);
+    }
 
     shutdown(clnt_sock, SHUT_WR);
-    close(clnt_sock);
+    shutdown(clnt_sock, SHUT_RD);
     pthread_mutex_unlock(&mutx);
     return NULL;
 }
